@@ -1,0 +1,41 @@
+<!-- templates/channel_details.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ details.title }}</title>
+</head>
+<body>
+    <h1>{{ details.title }}</h1>
+    <p>{{ details.description }}</p>
+    <p>Subscribers: {{ details.subscriberCount }}</p>
+    <p>Total Views: {{ details.viewCount }}</p>
+    <p>Total Videos: {{ details.videoCount }}</p>
+
+    <h2>Recent Uploads</h2>
+    <ul>
+        {% for video in recent_uploads %}
+            <li><a href="https://www.youtube.com/watch?v={{ video.videoId }}">{{ video.title }}</a></li>
+        {% endfor %}
+    </ul>
+
+    <!-- templates/channel_details.html (relevant update) -->
+
+<h2>Top Performing Video</h2>
+{% if top_video %}
+    <h3>{{ top_video.title }}</h3>
+    <p>Views: {{ top_video.viewCount }}</p>
+    <p>Likes: {{ top_video.likeCount }}</p>
+    <p>Comments: {{ top_video.commentCount }}</p>
+    <p>Engagement Rate: {{ top_video.engagementRate }}%</p>
+{% else %}
+    <p>No videos found.</p>
+{% endif %}
+
+
+    <a href="{{ url_for('index') }}">Back</a>
+</body>
+</html>
