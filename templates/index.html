@@ -1,17 +1,172 @@
-<!-- templates/index.html -->
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Channel Analysis</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-    <h1>Welcome to YouTube Channel Analysis</h1>
-    <form action="/channel-details" method="POST">
-        <label for="channel_url">Enter YouTube Channel URL:</label>
-        <input type="text" id="channel_url" name="channel_url" required>
-        <button type="submit">Analyze</button>
-    </form>
+    <div class="container mt-5">
+        <h1 class="text-center">YouTube Channel Analysis</h1>
+        <div class="d-flex justify-content-between">
+            <form method="POST" action="/" class="form-inline mt-4">
+                <div class="form-group">
+                    <input type="text" class="form-control" name="youtube_url" placeholder="Enter YouTube channel URL" required>
+                </div>
+                <button type="submit" class="btn btn-primary ml-2">Analyze</button>
+            </form>
+            <div>
+                <button class="btn btn-info" data-toggle="modal" data-target="#sentimentModal">Sentiment Analysis</button>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger mt-4">{{ error }}</div>
+        {% endif %}
+
+        {% if details %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>{{ details.title }}</h3>
+            </div>
+            <div class="card-body text-center">
+                <img src="{{ details.profile_image }}" alt="Profile Image" class="rounded-circle" width="150">
+                <p>{{ details.description }}</p>
+                <p><strong>Subscribers:</strong> {{ details.subscribers }}</p>
+                <p><strong>Total Views:</strong> {{ details.total_views }}</p>
+                <p><strong>Total Videos:</strong> {{ details.total_videos }}</p>
+                <p><strong>Country:</strong> {{ details.country }}</p>
+                <p><strong>Creation Date:</strong> {{ details.creation_date }}</p>
+                <a href="/static/channel_stats.csv" class="btn btn-secondary mt-3">Download CSV</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="mt-4">
+            <h3>Trending Videos</h3>
+            <div class="row">
+                {% for video in trending_videos %}
+                <div class="col-md-4">
+                    <div class="card mb-3">
+                        <img src="{{ video.thumbnail }}" class="card-img-top" alt="{{ video.title }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ video.title }}</h5>
+                            <p class="card-text"><strong>Channel:</strong> {{ video.channel_title }}</p>
+                            <p class="card-text"><strong>Views:</strong> {{ video.views }}</p>
+                            <a href="https://www.youtube.com/watch?v={{ video.video_id }}" class="btn btn-primary" target="_blank">Watch Video</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <h3>Videos by Category """</h3>
+            <div class="row">
+                {% for category, videos in category_videos.items() %}
+                <div class="col-md-12 mt-4">
+                    <h4>
+                        <img src="{{ category_thumbnails[category] }}" alt="{{ category }}" width="30" height="30"> 
+                        {{ category }}
+                    </h4>
+                    <table class="table table-bordered mt-3">
+                        <thead>
+                            <tr>
+                                <th>Thumbnail</th>
+                                <th>Titles</th>
+                                <th>Channel</th>
+                                <th>Views</th>
+                                <th>Published Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for video in videos %}
+                            <tr>
+                                <td><img src="{{ video.thumbnail }}" alt="{{ video.title }}" width="100"></td>
+                                <td>{{ video.title }}</td>
+                                <td>{{ video.channel_title }}</td>
+                                <td>{{ video.views }}</td>
+                                <td>{{ video.publish_date }}</td>
+                                <td><a href="https://www.youtube.com/watch?v={{ video.video_id }}" class="btn btn-primary" target="_blank">Watch Video</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sentiment Analysis Modal -->
+    <div class="modal fade" id="sentimentModal" tabindex="-1" role="dialog" aria-labelledby="sentimentModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sentimentModalLabel">Sentiment Analysis Results</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Display sentiment results and graph here -->
+                    <div id="sentimentResults">
+                        <p>Sentiment Score: <span id="sentimentScore">75%</span></p>
+                        <div id="sentimentGraph" style="width: 100%; height: 400px;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        let channelId = "YOUR_CHANNEL_ID"; // Replace with the actual channel ID
+    
+        function updateSubscriberCount() {
+            fetch(`/get_subscriber_count/${channelId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("subscriberCount").textContent = data.subscriberCount;
+                })
+                .catch(error => console.error('Error fetching subscriber count:', error));
+        }
+    
+        // Update the count every 60 seconds
+        setInterval(updateSubscriberCount, 60000);
+        // Initial fetch
+        updateSubscriberCount();
+    </script>
+    
+    <script>
+        // Function to load sentiment analysis data
+        function loadSentimentAnalysis() {
+            // Implement your logic here to fetch sentiment data, e.g., using AJAX or Fetch API
+            // Example: 
+            // fetch('/get_sentiment_analysis')
+            //   .then(response => response.json())
+            //   .then(data => {
+            //       document.getElementById("sentimentScore").textContent = data.score + "%"; // Update score
+            //       // Here you would initialize and render your graph in sentimentGraph div
+            //   });
+            document.getElementById("sentimentScore").textContent = "75%"; // Example score
+           
+        }
+ 
+        $('#sentimentModal').on('show.bs.modal', function (event) {
+            loadSentimentAnalysis();
+        });
+    </script>
 </body>
 </html>
